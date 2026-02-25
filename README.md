@@ -56,7 +56,7 @@ cd backend
 python app.py
 ```
 
-Abre el navegador en **http://localhost:5000**
+Abre el navegador en **http://localhost:8000**
 
 ---
 
