@@ -1,0 +1,64 @@
+version: '3.9'
+
+services:
+
+  # ── 1. Base de datos MySQL ───────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: bookshelf_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: bookshelf
+      MYSQL_USER: bookshelf_user
+      MYSQL_PASSWORD: bookshelf_pass
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./backend/bookshelf.sql:/docker-entrypoint-initdb.d/bookshelf.sql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── 2. Backend API REST ──────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: bookshelf_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: db
+      DB_USER: bookshelf_user
+      DB_PASSWORD: bookshelf_pass
+      DB_NAME: bookshelf
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── 3. Frontend Flask ────────────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: bookshelf_frontend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      API_URL: http://backend:5000
+      SECRET_KEY: bookshelf_docker_secret_2024
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  db_data:

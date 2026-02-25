@@ -1,64 +1,74 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, request, jsonify
 import mysql.connector
 import hashlib
 import os
-from functools import wraps
+import time
 
-# ── Apunta las templates a la carpeta frontend ────────────────────────────────
-BASE_DIR        = os.path.dirname(os.path.abspath(__file__))   # .../backend
-FRONTEND_DIR    = os.path.join(BASE_DIR, '..', 'frontend')     # .../frontend
-TEMPLATES_DIR   = os.path.join(FRONTEND_DIR, 'templates')
-STATIC_DIR      = os.path.join(FRONTEND_DIR, 'static')
-
-app = Flask(
-    __name__,
-    template_folder=TEMPLATES_DIR,
-    static_folder=STATIC_DIR
-)
-app.secret_key = 'bookshelf_secret_2024'
+app = Flask(__name__)
 
 # ── Configuración MySQL ───────────────────────────────────────────────────────
 DB_CONFIG = {
-    'host':     'localhost',
-    'user':     'root',
-    'password': '',          # ← pon tu contraseña aquí si tienes
-    'database': 'bookshelf',
+    'host':     os.environ.get('DB_HOST',     'localhost'),
+    'user':     os.environ.get('DB_USER',     'root'),
+    'password': os.environ.get('DB_PASSWORD', ''),
+    'database': os.environ.get('DB_NAME',     'bookshelf'),
     'charset':  'utf8mb4'
 }
 
 def get_db():
-    return mysql.connector.connect(**DB_CONFIG)
+    retries = 10
+    for i in range(retries):
+        try:
+            return mysql.connector.connect(**DB_CONFIG)
+        except Exception as e:
+            if i < retries - 1:
+                print(f"[DB] Esperando MySQL... intento {i+1}/{retries}", flush=True)
+                time.sleep(3)
+            else:
+                raise e
 
 def hash_pw(pw):
     return hashlib.sha256(pw.encode()).hexdigest()
 
-# ── Decoradores de auth ───────────────────────────────────────────────────────
-def login_required(f):
-    @wraps(f)
-    def wrapped(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Debes iniciar sesión primero.', 'info')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return wrapped
+# ── AUTH ──────────────────────────────────────────────────────────────────────
 
-def admin_required(f):
-    @wraps(f)
-    def wrapped(*args, **kwargs):
-        if 'user_id' not in session:
-            return redirect(url_for('login'))
-        if not session.get('is_admin'):
-            flash('Acceso restringido a administradores.', 'error')
-            return redirect(url_for('index'))
-        return f(*args, **kwargs)
-    return wrapped
-
-# ── Rutas principales ─────────────────────────────────────────────────────────
-@app.route('/')
-def index():
+@app.route('/api/login', methods=['POST'])
+def login():
+    data     = request.get_json()
+    username = data.get('username', '')
+    password = data.get('password', '')
     conn = get_db(); cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT id, username, is_admin FROM users WHERE username=%s AND password=%s",
+                (username, hash_pw(password)))
+    user = cur.fetchone(); cur.close(); conn.close()
+    if user:
+        return jsonify({'ok': True,  'user': user}), 200
+    return jsonify({'ok': False, 'error': 'Usuario o contraseña incorrectos'}), 401
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    data     = request.get_json()
+    username = data.get('username', '').strip()
+    email    = data.get('email', '').strip()
+    password = hash_pw(data.get('password', ''))
+    try:
+        conn = get_db(); cur = conn.cursor()
+        cur.execute("INSERT INTO users (username, email, password) VALUES (%s,%s,%s)",
+                    (username, email, password))
+        conn.commit()
+        uid = cur.lastrowid
+        cur.close(); conn.close()
+        return jsonify({'ok': True, 'user': {'id': uid, 'username': username, 'is_admin': 0}}), 201
+    except Exception:
+        return jsonify({'ok': False, 'error': 'El nombre de usuario o email ya existe'}), 409
+
+# ── LIBROS ────────────────────────────────────────────────────────────────────
+
+@app.route('/api/books', methods=['GET'])
+def get_books():
     search = request.args.get('q', '').strip()
     genre  = request.args.get('genre', '').strip()
+    conn = get_db(); cur = conn.cursor(dictionary=True)
 
     sql = """SELECT b.*, u.username AS added_by
              FROM books b LEFT JOIN users u ON b.created_by = u.id
@@ -74,207 +84,145 @@ def index():
     cur.execute(sql, params)
     books = cur.fetchall()
 
-    cur.execute("SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL AND genre != '' ORDER BY genre")
+    cur.execute("SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL AND genre!='' ORDER BY genre")
     genres = [r['genre'] for r in cur.fetchall()]
-
-    user_books = {}
-    if 'user_id' in session:
-        cur.execute("SELECT book_id, status, rating, liked FROM user_books WHERE user_id = %s", (session['user_id'],))
-        for row in cur.fetchall():
-            user_books[row['book_id']] = row
-
     cur.close(); conn.close()
-    return render_template('index.html', books=books, genres=genres,
-                           user_books=user_books, search=search, current_genre=genre)
 
-@app.route('/book/<int:bid>')
-def book_detail(bid):
+    # Convertir tipos no serializables
+    for b in books:
+        for k, v in b.items():
+            if hasattr(v, 'isoformat'):
+                b[k] = v.isoformat()
+
+    return jsonify({'books': books, 'genres': genres}), 200
+
+@app.route('/api/books/<int:bid>', methods=['GET'])
+def get_book(bid):
     conn = get_db(); cur = conn.cursor(dictionary=True)
     cur.execute("""SELECT b.*, u.username AS added_by
-                   FROM books b LEFT JOIN users u ON b.created_by = u.id
-                   WHERE b.id = %s""", (bid,))
+                   FROM books b LEFT JOIN users u ON b.created_by=u.id
+                   WHERE b.id=%s""", (bid,))
     book = cur.fetchone()
     if not book:
-        flash('Libro no encontrado.', 'error')
-        return redirect(url_for('index'))
+        cur.close(); conn.close()
+        return jsonify({'error': 'Libro no encontrado'}), 404
 
     cur.execute("""SELECT ub.*, u.username
-                   FROM user_books ub JOIN users u ON ub.user_id = u.id
-                   WHERE ub.book_id = %s AND (ub.comment IS NOT NULL OR ub.rating IS NOT NULL)
+                   FROM user_books ub JOIN users u ON ub.user_id=u.id
+                   WHERE ub.book_id=%s AND (ub.comment IS NOT NULL OR ub.rating IS NOT NULL)
                    ORDER BY ub.updated_at DESC""", (bid,))
     reviews = cur.fetchall()
 
-    user_book = None
-    if 'user_id' in session:
-        cur.execute("SELECT * FROM user_books WHERE user_id = %s AND book_id = %s",
-                    (session['user_id'], bid))
-        user_book = cur.fetchone()
-
     cur.execute("""SELECT COUNT(*) AS total, AVG(rating) AS avg_r
-                   FROM user_books WHERE book_id = %s AND rating IS NOT NULL""", (bid,))
+                   FROM user_books WHERE book_id=%s AND rating IS NOT NULL""", (bid,))
     stats = cur.fetchone()
 
     cur.close(); conn.close()
-    return render_template('book_detail.html', book=book, reviews=reviews,
-                           user_book=user_book, stats=stats)
 
-@app.route('/book/<int:bid>/update', methods=['POST'])
-@login_required
-def update_user_book(bid):
-    status  = request.form.get('status', 'quiero_leer')
-    rating  = request.form.get('rating') or None
-    liked_v = request.form.get('liked', '')
-    comment = request.form.get('comment', '').strip() or None
-    liked   = int(liked_v) if liked_v != '' else None
+    # Convertir tipos no serializables
+    for k, v in book.items():
+        if hasattr(v, 'isoformat'): book[k] = v.isoformat()
+    for r in reviews:
+        for k, v in r.items():
+            if hasattr(v, 'isoformat'): r[k] = v.isoformat()
+    if stats:
+        if stats.get('avg_r'): stats['avg_r'] = float(stats['avg_r'])
 
-    conn = get_db(); cur = conn.cursor()
-    cur.execute("SELECT id FROM user_books WHERE user_id = %s AND book_id = %s",
-                (session['user_id'], bid))
-    if cur.fetchone():
-        cur.execute("""UPDATE user_books
-                       SET status=%s, rating=%s, liked=%s, comment=%s, updated_at=NOW()
-                       WHERE user_id=%s AND book_id=%s""",
-                    (status, rating, liked, comment, session['user_id'], bid))
-    else:
-        cur.execute("""INSERT INTO user_books (user_id, book_id, status, rating, liked, comment)
-                       VALUES (%s, %s, %s, %s, %s, %s)""",
-                    (session['user_id'], bid, status, rating, liked, comment))
-    conn.commit(); cur.close(); conn.close()
-    flash('¡Tu lectura ha sido actualizada!', 'success')
-    return redirect(url_for('book_detail', bid=bid))
+    return jsonify({'book': book, 'reviews': reviews, 'stats': stats}), 200
 
-@app.route('/my-books')
-@login_required
-def my_books():
-    conn = get_db(); cur = conn.cursor(dictionary=True)
-    cur.execute("""SELECT b.*, ub.status, ub.rating, ub.liked, ub.comment, ub.updated_at
-                   FROM user_books ub JOIN books b ON ub.book_id = b.id
-                   WHERE ub.user_id = %s ORDER BY ub.updated_at DESC""", (session['user_id'],))
-    all_books = cur.fetchall()
-    cur.close(); conn.close()
-
-    reading = [b for b in all_books if b['status'] == 'leyendo']
-    read    = [b for b in all_books if b['status'] == 'leido']
-    want    = [b for b in all_books if b['status'] == 'quiero_leer']
-    return render_template('my_books.html', reading=reading, read=read, want=want)
-
-# ── Admin ─────────────────────────────────────────────────────────────────────
-@app.route('/admin')
-@admin_required
-def admin():
-    conn = get_db(); cur = conn.cursor(dictionary=True)
-    cur.execute("""SELECT b.*, u.username AS added_by
-                   FROM books b LEFT JOIN users u ON b.created_by = u.id ORDER BY b.orden ASC""")
-    books = cur.fetchall()
-    cur.execute("SELECT id, username, email, is_admin, created_at FROM users ORDER BY id DESC")
-    users = cur.fetchall()
-    cur.close(); conn.close()
-    return render_template('admin.html', books=books, users=users)
-
-@app.route('/admin/book/add', methods=['GET', 'POST'])
-@admin_required
+@app.route('/api/books', methods=['POST'])
 def add_book():
-    if request.method == 'POST':
-        conn = get_db(); cur = conn.cursor()
-        cur.execute("""INSERT INTO books (title, author, synopsis, genre, year, cover_color, cover_image, created_by)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                    (request.form['title'], request.form['author'],
-                     request.form.get('synopsis', ''), request.form.get('genre', ''),
-                     request.form.get('year') or None,
-                     request.form.get('cover_color', '#7c6f64'),
-                     request.form.get('cover_image', '').strip() or None,
-                     session['user_id']))
-        conn.commit(); cur.close(); conn.close()
-        flash('Libro añadido correctamente.', 'success')
-        return redirect(url_for('admin'))
-    return render_template('book_form.html', book=None, action='Añadir')
-
-@app.route('/admin/book/edit/<int:bid>', methods=['GET', 'POST'])
-@admin_required
-def edit_book(bid):
-    conn = get_db(); cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT * FROM books WHERE id = %s", (bid,))
-    book = cur.fetchone()
-    if not book:
-        flash('Libro no encontrado.', 'error')
-        cur.close(); conn.close()
-        return redirect(url_for('admin'))
-    if request.method == 'POST':
-        cur2 = conn.cursor()
-        cur2.execute("""UPDATE books
-                        SET title=%s, author=%s, synopsis=%s, genre=%s, year=%s,
-                            cover_color=%s, cover_image=%s
-                        WHERE id=%s""",
-                     (request.form['title'], request.form['author'],
-                      request.form.get('synopsis', ''), request.form.get('genre', ''),
-                      request.form.get('year') or None,
-                      request.form.get('cover_color', '#7c6f64'),
-                      request.form.get('cover_image', '').strip() or None,
-                      bid))
-        conn.commit(); cur2.close(); cur.close(); conn.close()
-        flash('Libro actualizado correctamente.', 'success')
-        return redirect(url_for('admin'))
+    data = request.get_json()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""INSERT INTO books (title, author, synopsis, genre, year, cover_color, cover_image, created_by)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (data['title'], data['author'],
+                 data.get('synopsis',''), data.get('genre',''),
+                 data.get('year') or None,
+                 data.get('cover_color','#7c6f64'),
+                 data.get('cover_image','') or None,
+                 data.get('created_by')))
+    conn.commit()
+    new_id = cur.lastrowid
     cur.close(); conn.close()
-    return render_template('book_form.html', book=book, action='Editar')
+    return jsonify({'ok': True, 'id': new_id}), 201
 
-@app.route('/admin/book/delete/<int:bid>', methods=['POST'])
-@admin_required
+@app.route('/api/books/<int:bid>', methods=['PUT'])
+def edit_book(bid):
+    data = request.get_json()
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""UPDATE books SET title=%s, author=%s, synopsis=%s, genre=%s,
+                   year=%s, cover_color=%s, cover_image=%s WHERE id=%s""",
+                (data['title'], data['author'],
+                 data.get('synopsis',''), data.get('genre',''),
+                 data.get('year') or None,
+                 data.get('cover_color','#7c6f64'),
+                 data.get('cover_image','') or None,
+                 bid))
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True}), 200
+
+@app.route('/api/books/<int:bid>', methods=['DELETE'])
 def delete_book(bid):
     conn = get_db(); cur = conn.cursor()
-    cur.execute("DELETE FROM user_books WHERE book_id = %s", (bid,))
-    cur.execute("DELETE FROM books WHERE id = %s", (bid,))
+    cur.execute("DELETE FROM user_books WHERE book_id=%s", (bid,))
+    cur.execute("DELETE FROM books WHERE id=%s", (bid,))
     conn.commit(); cur.close(); conn.close()
-    flash('Libro eliminado.', 'success')
-    return redirect(url_for('admin'))
+    return jsonify({'ok': True}), 200
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if 'user_id' in session:
-        return redirect(url_for('index'))
-    if request.method == 'POST':
-        conn = get_db(); cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT * FROM users WHERE username = %s AND password = %s",
-                    (request.form['username'], hash_pw(request.form['password'])))
-        user = cur.fetchone(); cur.close(); conn.close()
-        if user:
-            session['user_id']  = user['id']
-            session['username'] = user['username']
-            session['is_admin'] = bool(user['is_admin'])
-            flash(f'¡Bienvenido, {user["username"]}!', 'success')
-            return redirect(url_for('index'))
-        flash('Usuario o contraseña incorrectos.', 'error')
-    return render_template('login.html')
+# ── USER BOOKS ────────────────────────────────────────────────────────────────
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if 'user_id' in session:
-        return redirect(url_for('index'))
-    if request.method == 'POST':
-        username = request.form['username'].strip()
-        email    = request.form['email'].strip()
-        password = hash_pw(request.form['password'])
-        try:
-            conn = get_db(); cur = conn.cursor()
-            cur.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
-                        (username, email, password))
-            conn.commit()
-            uid = cur.lastrowid
-            cur.close(); conn.close()
-            session['user_id']  = uid
-            session['username'] = username
-            session['is_admin'] = False
-            flash('¡Cuenta creada! Bienvenido a Bookshelf.', 'success')
-            return redirect(url_for('index'))
-        except Exception:
-            flash('El nombre de usuario o email ya existe.', 'error')
-    return render_template('register.html')
+@app.route('/api/user/<int:uid>/books', methods=['GET'])
+def get_user_books(uid):
+    conn = get_db(); cur = conn.cursor(dictionary=True)
+    cur.execute("""SELECT b.*, ub.status, ub.rating, ub.liked, ub.comment, ub.updated_at
+                   FROM user_books ub JOIN books b ON ub.book_id=b.id
+                   WHERE ub.user_id=%s ORDER BY ub.updated_at DESC""", (uid,))
+    books = cur.fetchall()
+    cur.close(); conn.close()
 
-@app.route('/logout')
-def logout():
-    session.clear()
-    flash('Has cerrado sesión correctamente.', 'info')
-    return redirect(url_for('login'))
+    for b in books:
+        for k, v in b.items():
+            if hasattr(v, 'isoformat'): b[k] = v.isoformat()
+
+    return jsonify({'books': books}), 200
+
+@app.route('/api/user/<int:uid>/books/<int:bid>', methods=['GET'])
+def get_user_book(uid, bid):
+    conn = get_db(); cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM user_books WHERE user_id=%s AND book_id=%s", (uid, bid))
+    ub = cur.fetchone()
+    cur.close(); conn.close()
+    if ub:
+        for k, v in ub.items():
+            if hasattr(v, 'isoformat'): ub[k] = v.isoformat()
+    return jsonify({'user_book': ub}), 200
+
+@app.route('/api/user/<int:uid>/books/<int:bid>', methods=['POST'])
+def update_user_book(uid, bid):
+    data    = request.get_json()
+    status  = data.get('status', 'quiero_leer')
+    rating  = data.get('rating') or None
+    liked   = data.get('liked')
+    comment = data.get('comment', '').strip() or None
+
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT id FROM user_books WHERE user_id=%s AND book_id=%s", (uid, bid))
+    if cur.fetchone():
+        cur.execute("""UPDATE user_books SET status=%s, rating=%s, liked=%s,
+                       comment=%s, updated_at=NOW() WHERE user_id=%s AND book_id=%s""",
+                    (status, rating, liked, comment, uid, bid))
+    else:
+        cur.execute("""INSERT INTO user_books (user_id,book_id,status,rating,liked,comment)
+                       VALUES (%s,%s,%s,%s,%s,%s)""",
+                    (uid, bid, status, rating, liked, comment))
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True}), 200
+
+# ── Health check ──────────────────────────────────────────────────────────────
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(host='0.0.0.0', port=5000, debug=False)
