@@ -41,24 +41,21 @@ jobs:
           python-version: '3.11'
 
       - name: 📦 Instalar dependencias del backend
-        working-directory: ./backend
         run: |
+          cd $(find . -name "requirements.txt" | xargs grep -l "mysql-connector" | head -1 | xargs dirname)
           pip install -r requirements.txt
           pip install pytest requests
 
       - name: 🗄️ Inicializar base de datos
         run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -prootpassword < ./backend/bookshelf.sql
+          SQL=$(find . -name "bookshelf.sql" | head -1)
+          mysql -h 127.0.0.1 -P 3306 -u root -prootpassword < "$SQL"
 
       - name: 🚀 Arrancar backend en segundo plano
-        working-directory: ./backend
-        env:
-          DB_HOST: 127.0.0.1
-          DB_USER: bookshelf_user
-          DB_PASSWORD: bookshelf_pass
-          DB_NAME: bookshelf
         run: |
-          python app.py &
+          BACKEND=$(find . -name "app.py" | xargs grep -l "mysql" | head -1 | xargs dirname)
+          cd "$BACKEND"
+          DB_HOST=127.0.0.1 DB_USER=bookshelf_user DB_PASSWORD=bookshelf_pass DB_NAME=bookshelf python app.py &
           sleep 5
 
       - name: ✅ Comprobar health del backend
@@ -66,13 +63,9 @@ jobs:
           curl --fail http://localhost:5000/api/health
 
       - name: 🧪 Ejecutar tests del backend
-        working-directory: ./backend
-        env:
-          DB_HOST: 127.0.0.1
-          DB_USER: bookshelf_user
-          DB_PASSWORD: bookshelf_pass
-          DB_NAME: bookshelf
         run: |
+          BACKEND=$(find . -name "app.py" | xargs grep -l "mysql" | head -1 | xargs dirname)
+          cd "$BACKEND"
           pytest tests/ -v --tb=short 2>/dev/null || echo "Sin tests aún — health check superado ✓"
 
 
@@ -93,20 +86,22 @@ jobs:
           python-version: '3.11'
 
       - name: 📦 Instalar dependencias del frontend
-        working-directory: ./frontend
         run: |
+          FRONTEND=$(find . -name "requirements.txt" | xargs grep -l "requests" | head -1 | xargs dirname)
+          cd "$FRONTEND"
           pip install -r requirements.txt
           pip install pytest
 
       - name: 🔍 Comprobar sintaxis Python
-        working-directory: ./frontend
         run: |
-          python -m py_compile app.py
+          FRONTEND=$(find . -name "app.py" | xargs grep -l "render_template" | head -1)
+          python -m py_compile "$FRONTEND"
           echo "Sintaxis OK ✓"
 
       - name: 🧪 Ejecutar tests del frontend
-        working-directory: ./frontend
         run: |
+          FRONTEND=$(find . -name "app.py" | xargs grep -l "render_template" | head -1 | xargs dirname)
+          cd "$FRONTEND"
           pytest tests/ -v --tb=short 2>/dev/null || echo "Sin tests aún — sintaxis superada ✓"
 
 
@@ -125,23 +120,17 @@ jobs:
       - name: 🐳 Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: 🔨 Build imagen Backend
+      - name: 🔨 Build y levantar todos los contenedores
         run: |
-          docker build ./backend -t bookshelf-backend:latest
-          echo "Imagen backend construida ✓"
-
-      - name: 🔨 Build imagen Frontend
-        run: |
-          docker build ./frontend -t bookshelf-frontend:latest
-          echo "Imagen frontend construida ✓"
-
-      - name: 🐳 Levantar todos los contenedores
-        run: |
+          COMPOSE=$(find . -name "docker-compose.yml" | head -1 | xargs dirname)
+          cd "$COMPOSE"
           docker compose up -d --build
           sleep 20
 
       - name: ✅ Comprobar que los contenedores están corriendo
         run: |
+          COMPOSE=$(find . -name "docker-compose.yml" | head -1 | xargs dirname)
+          cd "$COMPOSE"
           docker compose ps
           docker compose ps | grep "bookshelf_db"       | grep -q "healthy\|Up" && echo "DB OK ✓"       || exit 1
           docker compose ps | grep "bookshelf_backend"  | grep -q "healthy\|Up" && echo "Backend OK ✓"  || exit 1
@@ -155,4 +144,7 @@ jobs:
 
       - name: 🧹 Limpiar contenedores
         if: always()
-        run: docker compose down -v
+        run: |
+          COMPOSE=$(find . -name "docker-compose.yml" | head -1 | xargs dirname)
+          cd "$COMPOSE"
+          docker compose down -v
