@@ -1,0 +1,48 @@
+name: CI/CD Básico Seguro
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read          # mínimo necesario
+
+jobs:
+  pruebas-y-chequeos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout del código
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js (cambia versión si usas otra)
+        if: ${{ contains(github.repository, 'node') || true }}  # quita el if si NO es Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Si usas Python → descomenta esto y comenta lo de Node
+      # - name: ⚙️ Setup Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.11'
+      #     cache: 'pip'
+
+      - name: 📦 Instalar dependencias
+        run: |
+          npm ci    # o: pip install -r requirements.txt   si es Python
+
+      - name: 🧹 Lint / Code style (opcional pero muy recomendado)
+        run: npm run lint    # o flake8 .   o pylint   según tu proyecto
+
+      - name: 🧪 Ejecutar pruebas
+        run: npm test        # o: pytest   o python -m unittest
+
+      - name: 🔍 Security audit (muy recomendado)
+        run: npm audit --audit-level=moderate   # o: pip-audit  para Python
+
+      # Opcional: escaneo de dependencias vulnerables más potente
+      # - name: Dependency Review
+      #   uses: actions/dependency-review-action@v4
