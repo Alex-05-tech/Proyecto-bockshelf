@@ -80,6 +80,10 @@ docker compose down
 - Valorar libros y dejar comentarios
 - Panel de administración para gestionar el catálogo
 
+Imagen de la Web en funcionamiento
+<img width="941" height="491" alt="image" src="https://github.com/user-attachments/assets/8d7dd511-1dde-4255-a4e4-2d91a7e59b29" />
+
+
 ---
 
 ## 🔄 CI/CD — GitHub Actions
@@ -94,7 +98,10 @@ Pipeline automático en cada push o pull request a `main`/`master`.
 
 ## 🧪 Pruebas
 
-Se incluye también una colección Postman en `docs/Bookshelf_Tests_Postman.json`
+Se incluye también una colección Postman en `docs/Bookshelf_Tests_Postman.json` (Hay mas pruebas realizadas)
+<img width="1064" height="276" alt="image" src="https://github.com/user-attachments/assets/3e0b9aa2-95ff-4aeb-8740-d51853949c4b" />
+
+
 Pruebas con Pytest organizadas en `tests/backend/` y `tests/frontend/`.
 
 
