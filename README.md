@@ -1,15 +1,15 @@
-================================================================================
+=============================
   📚 BOOKSHELF — README
-================================================================================
+============================
 
 Aplicación web para gestionar y descubrir libros, construida con Flask,
 MySQL y Docker. Permite explorar un catálogo de libros, registrar lecturas,
 dejar valoraciones y comentarios.
 
 
-================================================================================
+========================================================
   🐳 ARQUITECTURA DOCKER — CONEXIÓN ENTRE CONTENEDORES
-================================================================================
+=======================================================
 
   ┌─────────────────┐        ┌─────────────────┐        ┌─────────────────┐
   │                 │        │                 │        │                 │
@@ -47,9 +47,9 @@ dejar valoraciones y comentarios.
   └─────────────────────────────────────────────────────────────────────────┘
 
 
-================================================================================
+==============================
   🗂  ESTRUCTURA DEL PROYECTO
-================================================================================
+=============================
 
   bookshelf/
   ├── docker-compose.yml
@@ -73,9 +73,9 @@ dejar valoraciones y comentarios.
           └── register.html
 
 
-================================================================================
+=============================
   ⚙️  TECNOLOGÍAS UTILIZADAS
-================================================================================
+=============================
 
   · Backend:          Python 3 + Flask + mysql-connector-python
   · Frontend:         Python 3 + Flask (plantillas Jinja2)
@@ -84,9 +84,9 @@ dejar valoraciones y comentarios.
   · Servidor WSGI:    Gunicorn
 
 
-================================================================================
+====================================
   🚀 INSTALACIÓN Y PUESTA EN MARCHA
-================================================================================
+====================================
 
   REQUISITOS PREVIOS
   · Docker Desktop instalado y en ejecución  (https://www.docker.com)
@@ -115,9 +115,9 @@ dejar valoraciones y comentarios.
        docker compose down -v
 
 
-================================================================================
+===============================
   🔑 CREDENCIALES POR DEFECTO
-================================================================================
+==============================
 
   Rol      Usuario    Contraseña
   -------  ---------  ----------
@@ -126,9 +126,9 @@ dejar valoraciones y comentarios.
   ⚠ Cambia estas credenciales antes de desplegar en producción.
 
 
-================================================================================
+======================
   ✨ FUNCIONALIDADES
-================================================================================
+======================
 
   USUARIO GENERAL
   · Explorar catálogo con búsqueda por título/autor y filtro por género
@@ -144,9 +144,9 @@ dejar valoraciones y comentarios.
   · Vista previa de portada en tiempo real
 
 
-================================================================================
+=======================================
   🔌 API REST — ENDPOINTS DEL BACKEND
-================================================================================
+=======================================
 
   Método    Endpoint                          Descripción
   --------  --------------------------------  --------------------------------
@@ -163,9 +163,9 @@ dejar valoraciones y comentarios.
   POST      /api/user/:uid/books/:bid         Actualizar estado / valoración
 
 
-================================================================================
+======================
   🗄️  BASE DE DATOS
-================================================================================
+======================
 
   Inicializada automáticamente con backend/bookshelf.sql:
 
@@ -178,9 +178,9 @@ dejar valoraciones y comentarios.
   La Sombra del Viento, Cien Años de Soledad, 1984, Fundación...
 
 
-================================================================================
+===========================
   🐳 VARIABLES DE ENTORNO
-================================================================================
+===========================
 
   BACKEND
   DB_HOST        db                     Host de MySQL
@@ -192,11 +192,11 @@ dejar valoraciones y comentarios.
   API_URL        http://backend:5000    URL del backend
   SECRET_KEY     bookshelf_docker_secret_2024   Clave secreta Flask
 
-================================================================================
+============================
 
-================================================================================
+===========================
   🧪 PRUEBAS CON POSTMAN
-================================================================================
+===========================
 
   Se incluye una colección de pruebas Postman en:
   docs/Bookshelf_Tests_Postman.json
@@ -207,6 +207,6 @@ dejar valoraciones y comentarios.
   3. Asegúrate de tener los contenedores levantados (docker compose up --build)
   4. Ejecuta las peticiones contra http://localhost:5000
 
-================================================================================
+=========================
 
 borrado y modificar
