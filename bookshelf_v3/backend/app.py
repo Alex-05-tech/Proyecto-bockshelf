@@ -3,8 +3,19 @@ import mysql.connector
 import hashlib
 import os
 import time
+import logging
+import re
+from functools import wraps
+from collections import defaultdict
 
 app = Flask(__name__)
+
+# ── Logging de seguridad ──────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # ── Configuración MySQL ───────────────────────────────────────────────────────
 DB_CONFIG = {
@@ -14,6 +25,31 @@ DB_CONFIG = {
     'database': os.environ.get('DB_NAME',     'bookshelf'),
     'charset':  'utf8mb4'
 }
+
+# ── Rate limiting simple (A04 - OWASP) ───────────────────────────────────────
+login_attempts = defaultdict(list)
+MAX_ATTEMPTS = 5
+WINDOW_SECONDS = 300  # 5 minutos
+
+def check_rate_limit(ip):
+    now = time.time()
+    attempts = login_attempts[ip]
+    # Limpiar intentos fuera de la ventana
+    login_attempts[ip] = [t for t in attempts if now - t < WINDOW_SECONDS]
+    if len(login_attempts[ip]) >= MAX_ATTEMPTS:
+        return False
+    login_attempts[ip].append(now)
+    return True
+
+# ── Cabeceras de seguridad (A05 - OWASP) ─────────────────────────────────────
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    return response
 
 def get_db():
     retries = 10
@@ -27,22 +63,54 @@ def get_db():
             else:
                 raise e
 
+# ── Hash con salt (A02 - OWASP) ───────────────────────────────────────────────
 def hash_pw(pw):
-    return hashlib.sha256(pw.encode()).hexdigest()
+    # Usamos SHA-256 con salt fijo de entorno para mejorar seguridad
+    salt = os.environ.get('PASSWORD_SALT', 'bookshelf_salt_2024')
+    return hashlib.sha256((pw + salt).encode()).hexdigest()
+
+# ── Validación de inputs (A03 - OWASP) ───────────────────────────────────────
+def validate_username(username):
+    return bool(re.match(r'^[a-zA-Z0-9_]{3,40}$', username))
+
+def validate_email(email):
+    return bool(re.match(r'^[^@]+@[^@]+\.[^@]+$', email))
+
+def validate_password(password):
+    return len(password) >= 6
 
 # ── AUTH ──────────────────────────────────────────────────────────────────────
 
 @app.route('/api/login', methods=['POST'])
 def login():
+    ip = request.remote_addr
+
+    # A04 - Rate limiting
+    if not check_rate_limit(ip):
+        logger.warning(f"[SEGURIDAD] Rate limit superado para IP: {ip}")
+        return jsonify({'ok': False, 'error': 'Demasiados intentos. Espera 5 minutos.'}), 429
+
     data     = request.get_json()
     username = data.get('username', '')
     password = data.get('password', '')
-    conn = get_db(); cur = conn.cursor(dictionary=True)
+
+    # A03 - Validación básica
+    if not username or not password:
+        return jsonify({'ok': False, 'error': 'Datos incompletos'}), 400
+
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
     cur.execute("SELECT id, username, is_admin FROM users WHERE username=%s AND password=%s",
                 (username, hash_pw(password)))
-    user = cur.fetchone(); cur.close(); conn.close()
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+
     if user:
-        return jsonify({'ok': True,  'user': user}), 200
+        logger.info(f"[AUTH] Login correcto: {username} desde {ip}")
+        return jsonify({'ok': True, 'user': user}), 200
+
+    logger.warning(f"[AUTH] Login fallido: {username} desde {ip}")
     return jsonify({'ok': False, 'error': 'Usuario o contraseña incorrectos'}), 401
 
 @app.route('/api/register', methods=['POST'])
@@ -50,14 +118,26 @@ def register():
     data     = request.get_json()
     username = data.get('username', '').strip()
     email    = data.get('email', '').strip()
-    password = hash_pw(data.get('password', ''))
+    password = data.get('password', '')
+
+    # A03 - Validación de inputs
+    if not validate_username(username):
+        return jsonify({'ok': False, 'error': 'Nombre de usuario inválido (3-40 caracteres, solo letras, números y _)'}), 400
+    if not validate_email(email):
+        return jsonify({'ok': False, 'error': 'Email inválido'}), 400
+    if not validate_password(password):
+        return jsonify({'ok': False, 'error': 'La contraseña debe tener al menos 6 caracteres'}), 400
+
     try:
-        conn = get_db(); cur = conn.cursor()
+        conn = get_db()
+        cur = conn.cursor()
         cur.execute("INSERT INTO users (username, email, password) VALUES (%s,%s,%s)",
-                    (username, email, password))
+                    (username, email, hash_pw(password)))
         conn.commit()
         uid = cur.lastrowid
-        cur.close(); conn.close()
+        cur.close()
+        conn.close()
+        logger.info(f"[AUTH] Nuevo usuario registrado: {username}")
         return jsonify({'ok': True, 'user': {'id': uid, 'username': username, 'is_admin': 0}}), 201
     except Exception:
         return jsonify({'ok': False, 'error': 'El nombre de usuario o email ya existe'}), 409
@@ -68,7 +148,13 @@ def register():
 def get_books():
     search = request.args.get('q', '').strip()
     genre  = request.args.get('genre', '').strip()
-    conn = get_db(); cur = conn.cursor(dictionary=True)
+
+    # A03 - Limitar longitud de búsqueda
+    if len(search) > 100:
+        search = search[:100]
+
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
 
     sql = """SELECT b.*, u.username AS added_by
              FROM books b LEFT JOIN users u ON b.created_by = u.id
@@ -86,9 +172,9 @@ def get_books():
 
     cur.execute("SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL AND genre!='' ORDER BY genre")
     genres = [r['genre'] for r in cur.fetchall()]
-    cur.close(); conn.close()
+    cur.close()
+    conn.close()
 
-    # Convertir tipos no serializables
     for b in books:
         for k, v in b.items():
             if hasattr(v, 'isoformat'):
@@ -98,13 +184,15 @@ def get_books():
 
 @app.route('/api/books/<int:bid>', methods=['GET'])
 def get_book(bid):
-    conn = get_db(); cur = conn.cursor(dictionary=True)
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
     cur.execute("""SELECT b.*, u.username AS added_by
                    FROM books b LEFT JOIN users u ON b.created_by=u.id
                    WHERE b.id=%s""", (bid,))
     book = cur.fetchone()
     if not book:
-        cur.close(); conn.close()
+        cur.close()
+        conn.close()
         return jsonify({'error': 'Libro no encontrado'}), 404
 
     cur.execute("""SELECT ub.*, u.username
@@ -116,10 +204,9 @@ def get_book(bid):
     cur.execute("""SELECT COUNT(*) AS total, AVG(rating) AS avg_r
                    FROM user_books WHERE book_id=%s AND rating IS NOT NULL""", (bid,))
     stats = cur.fetchone()
+    cur.close()
+    conn.close()
 
-    cur.close(); conn.close()
-
-    # Convertir tipos no serializables
     for k, v in book.items():
         if hasattr(v, 'isoformat'): book[k] = v.isoformat()
     for r in reviews:
@@ -133,53 +220,75 @@ def get_book(bid):
 @app.route('/api/books', methods=['POST'])
 def add_book():
     data = request.get_json()
-    conn = get_db(); cur = conn.cursor()
+
+    # A03 - Validación de campos obligatorios
+    if not data.get('title') or not data.get('author'):
+        return jsonify({'ok': False, 'error': 'Título y autor son obligatorios'}), 400
+
+    conn = get_db()
+    cur = conn.cursor()
     cur.execute("""INSERT INTO books (title, author, synopsis, genre, year, cover_color, cover_image, created_by)
                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
-                (data['title'], data['author'],
-                 data.get('synopsis',''), data.get('genre',''),
+                (data['title'][:200], data['author'][:150],
+                 data.get('synopsis','')[:2000], data.get('genre','')[:80],
                  data.get('year') or None,
-                 data.get('cover_color','#7c6f64'),
+                 data.get('cover_color','#7c6f64')[:20],
                  data.get('cover_image','') or None,
                  data.get('created_by')))
     conn.commit()
     new_id = cur.lastrowid
-    cur.close(); conn.close()
+    cur.close()
+    conn.close()
+    logger.info(f"[BOOKS] Libro añadido: {data['title']}")
     return jsonify({'ok': True, 'id': new_id}), 201
 
 @app.route('/api/books/<int:bid>', methods=['PUT'])
 def edit_book(bid):
     data = request.get_json()
-    conn = get_db(); cur = conn.cursor()
+
+    if not data.get('title') or not data.get('author'):
+        return jsonify({'ok': False, 'error': 'Título y autor son obligatorios'}), 400
+
+    conn = get_db()
+    cur = conn.cursor()
     cur.execute("""UPDATE books SET title=%s, author=%s, synopsis=%s, genre=%s,
                    year=%s, cover_color=%s, cover_image=%s WHERE id=%s""",
-                (data['title'], data['author'],
-                 data.get('synopsis',''), data.get('genre',''),
+                (data['title'][:200], data['author'][:150],
+                 data.get('synopsis','')[:2000], data.get('genre','')[:80],
                  data.get('year') or None,
-                 data.get('cover_color','#7c6f64'),
+                 data.get('cover_color','#7c6f64')[:20],
                  data.get('cover_image','') or None,
                  bid))
-    conn.commit(); cur.close(); conn.close()
+    conn.commit()
+    cur.close()
+    conn.close()
+    logger.info(f"[BOOKS] Libro editado: ID {bid}")
     return jsonify({'ok': True}), 200
 
 @app.route('/api/books/<int:bid>', methods=['DELETE'])
 def delete_book(bid):
-    conn = get_db(); cur = conn.cursor()
+    conn = get_db()
+    cur = conn.cursor()
     cur.execute("DELETE FROM user_books WHERE book_id=%s", (bid,))
     cur.execute("DELETE FROM books WHERE id=%s", (bid,))
-    conn.commit(); cur.close(); conn.close()
+    conn.commit()
+    cur.close()
+    conn.close()
+    logger.info(f"[BOOKS] Libro eliminado: ID {bid}")
     return jsonify({'ok': True}), 200
 
 # ── USER BOOKS ────────────────────────────────────────────────────────────────
 
 @app.route('/api/user/<int:uid>/books', methods=['GET'])
 def get_user_books(uid):
-    conn = get_db(); cur = conn.cursor(dictionary=True)
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
     cur.execute("""SELECT b.*, ub.status, ub.rating, ub.liked, ub.comment, ub.updated_at
                    FROM user_books ub JOIN books b ON ub.book_id=b.id
                    WHERE ub.user_id=%s ORDER BY ub.updated_at DESC""", (uid,))
     books = cur.fetchall()
-    cur.close(); conn.close()
+    cur.close()
+    conn.close()
 
     for b in books:
         for k, v in b.items():
@@ -189,10 +298,12 @@ def get_user_books(uid):
 
 @app.route('/api/user/<int:uid>/books/<int:bid>', methods=['GET'])
 def get_user_book(uid, bid):
-    conn = get_db(); cur = conn.cursor(dictionary=True)
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
     cur.execute("SELECT * FROM user_books WHERE user_id=%s AND book_id=%s", (uid, bid))
     ub = cur.fetchone()
-    cur.close(); conn.close()
+    cur.close()
+    conn.close()
     if ub:
         for k, v in ub.items():
             if hasattr(v, 'isoformat'): ub[k] = v.isoformat()
@@ -206,7 +317,16 @@ def update_user_book(uid, bid):
     liked   = data.get('liked')
     comment = data.get('comment', '').strip() or None
 
-    conn = get_db(); cur = conn.cursor()
+    # A03 - Validar status
+    if status not in ('quiero_leer', 'leyendo', 'leido'):
+        return jsonify({'ok': False, 'error': 'Estado inválido'}), 400
+
+    # A03 - Validar rating
+    if rating is not None and (int(rating) < 1 or int(rating) > 5):
+        return jsonify({'ok': False, 'error': 'Valoración debe ser entre 1 y 5'}), 400
+
+    conn = get_db()
+    cur = conn.cursor()
     cur.execute("SELECT id FROM user_books WHERE user_id=%s AND book_id=%s", (uid, bid))
     if cur.fetchone():
         cur.execute("""UPDATE user_books SET status=%s, rating=%s, liked=%s,
@@ -216,7 +336,9 @@ def update_user_book(uid, bid):
         cur.execute("""INSERT INTO user_books (user_id,book_id,status,rating,liked,comment)
                        VALUES (%s,%s,%s,%s,%s,%s)""",
                     (uid, bid, status, rating, liked, comment))
-    conn.commit(); cur.close(); conn.close()
+    conn.commit()
+    cur.close()
+    conn.close()
     return jsonify({'ok': True}), 200
 
 # ── Health check ──────────────────────────────────────────────────────────────

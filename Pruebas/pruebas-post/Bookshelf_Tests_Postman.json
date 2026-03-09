@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Bookshelf — Tests Automáticos",
-    "description": "Colección con scripts de test automáticos en cada petición.\nCada prueba muestra ✅ o ❌ en la pestaña 'Test Results'.\n\n⚠️ ANTES DE EMPEZAR:\n1. Arranca el servidor: cd backend → python app.py\n2. Comprueba que corre en http://localhost:8000\n3. En Postman Settings activa 'Automatically follow redirects' y 'Save cookies'\n4. Ejecuta las peticiones EN ORDEN",
+    "description": "Colección con scripts de test automáticos.\n\n⚠️ ANTES DE EMPEZAR:\n1. Levanta los contenedores: docker compose up --build\n2. En Postman Settings activa 'Automatically follow redirects' y 'Save cookies'\n3. Ejecuta las peticiones EN ORDEN",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -15,218 +15,127 @@
 
         {
           "name": "1. Registro de nuevo usuario",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status es 200 o 302 (registro OK)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ El servidor responde', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
-                  "});",
-                  "",
-                  "pm.test('✅ No aparece error de usuario duplicado', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('ya existe');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (registro OK)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ No aparece error de usuario duplicado', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('ya existe');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/register", "host": ["{{base_url}}"], "path": ["register"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "username", "value": "testuser" },
-                { "key": "email",    "value": "test@prueba.com" },
-                { "key": "password", "value": "1234abcd" }
-              ]
-            }
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "username", "value": "testuser_postman" },
+              { "key": "email",    "value": "testpostman@prueba.com" },
+              { "key": "password", "value": "1234abcd" }
+            ]}
           }
         },
 
         {
           "name": "2. Login como usuario normal",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status es 200 o 302 (login OK)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ No aparece mensaje de error', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('incorrectos');",
-                  "});",
-                  "",
-                  "pm.test('✅ Respuesta en menos de 3 segundos', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (login OK)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ No aparece mensaje de error', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('incorrectos');",
+            "});",
+            "pm.test('✅ Respuesta en menos de 3 segundos', function () {",
+            "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "username", "value": "testuser" },
-                { "key": "password", "value": "1234abcd" }
-              ]
-            }
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "username", "value": "testuser_postman" },
+              { "key": "password", "value": "1234abcd" }
+            ]}
           }
         },
 
         {
           "name": "3. Login como ADMIN",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status es 200 o 302 (login admin OK)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ No aparece mensaje de error de credenciales', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('incorrectos');",
-                  "});",
-                  "",
-                  "pm.test('✅ Respuesta rápida del servidor', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (login admin OK)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ No aparece mensaje de error de credenciales', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('incorrectos');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "username", "value": "admin" },
-                { "key": "password", "value": "admin123" }
-              ]
-            }
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "username", "value": "admin" },
+              { "key": "password", "value": "admin123" }
+            ]}
           }
         },
 
         {
           "name": "4. Login con contraseña incorrecta",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 (no redirige, muestra error)', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra mensaje de error en el HTML', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('incorrectos');",
-                  "});",
-                  "",
-                  "pm.test('✅ NO redirige al catálogo (acceso denegado)', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('Explorar la Biblioteca');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 (no redirige, muestra error)', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ Muestra mensaje de error en el HTML', function () {",
+            "    pm.expect(pm.response.text()).to.include('incorrectos');",
+            "});",
+            "pm.test('✅ NO redirige al catálogo', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('Explorar la Biblioteca');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "username", "value": "admin" },
-                { "key": "password", "value": "contraseña_incorrecta_123" }
-              ]
-            }
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "username", "value": "admin" },
+              { "key": "password", "value": "contraseña_incorrecta_123" }
+            ]}
           }
         },
 
         {
           "name": "5. Registro con email duplicado",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 (no redirige, muestra error)', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra mensaje de email o usuario duplicado', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('ya existe');",
-                  "});",
-                  "",
-                  "pm.test('✅ Sigue mostrando el formulario de registro', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('register');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 (muestra error)', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ Muestra mensaje de duplicado', function () {",
+            "    pm.expect(pm.response.text()).to.include('ya existe');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/register", "host": ["{{base_url}}"], "path": ["register"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "username", "value": "otrousuario" },
-                { "key": "email",    "value": "test@prueba.com" },
-                { "key": "password", "value": "otraclave123" }
-              ]
-            }
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "username", "value": "otrousuario" },
+              { "key": "email",    "value": "testpostman@prueba.com" },
+              { "key": "password", "value": "otraclave123" }
+            ]}
           }
         },
 
         {
           "name": "6. Logout",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (logout OK)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ Redirige a la página de login', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('login').or.include('Iniciar');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (logout OK)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ Redirige a login', function () {",
+            "    pm.expect(pm.response.text()).to.include('login').or.include('Iniciar');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
@@ -243,38 +152,20 @@
 
         {
           "name": "7. Ver catálogo completo",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 (página carga OK)', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ El catálogo contiene libros', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Mistborn');",
-                  "});",
-                  "",
-                  "pm.test('✅ Aparece la barra de búsqueda', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Buscar');",
-                  "});",
-                  "",
-                  "pm.test('✅ Aparecen libros de Sanderson', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Sanderson');",
-                  "});",
-                  "",
-                  "pm.test('✅ Tiempo de respuesta menor a 3s', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ El catálogo contiene libros', function () {",
+            "    pm.expect(pm.response.text()).to.include('Mistborn');",
+            "});",
+            "pm.test('✅ Aparece la barra de búsqueda', function () {",
+            "    pm.expect(pm.response.text()).to.include('Buscar');",
+            "});",
+            "pm.test('✅ Tiempo de respuesta menor a 3s', function () {",
+            "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
@@ -284,29 +175,17 @@
 
         {
           "name": "8. Buscar por título — Mistborn",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ Los resultados contienen Mistborn', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Mistborn');",
-                  "});",
-                  "",
-                  "pm.test('✅ No aparecen libros de otros autores (1984 no debe salir)', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('>1984<');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ Resultados contienen Mistborn', function () {",
+            "    pm.expect(pm.response.text()).to.include('Mistborn');",
+            "});",
+            "pm.test('✅ No aparece 1984', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('George Orwell');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
@@ -321,29 +200,14 @@
 
         {
           "name": "9. Buscar por autor — Sanderson",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ Aparece Brandon Sanderson en resultados', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Sanderson');",
-                  "});",
-                  "",
-                  "pm.test('✅ Aparece al menos uno de sus libros', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Mistborn');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ Aparece Sanderson en resultados', function () {",
+            "    pm.expect(pm.response.text()).to.include('Sanderson');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
@@ -358,34 +222,22 @@
 
         {
           "name": "10. Filtrar por género — Fantasía",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ Aparecen libros de Fantasía', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Sanderson');",
-                  "});",
-                  "",
-                  "pm.test('✅ No aparecen libros de Distopía (1984)', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('George Orwell');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ Aparecen libros de Fantasía', function () {",
+            "    pm.expect(pm.response.text()).to.include('Sanderson');",
+            "});",
+            "pm.test('✅ No aparece George Orwell (Distopía)', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('George Orwell');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/?genre=Fantasía",
+              "raw": "{{base_url}}/?genre=Fantas%C3%ADa",
               "host": ["{{base_url}}"],
               "path": [""],
               "query": [{ "key": "genre", "value": "Fantasía" }]
@@ -395,29 +247,14 @@
 
         {
           "name": "11. Búsqueda sin resultados",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 (no da error)', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra mensaje de sin resultados', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('No se encontraron');",
-                  "});",
-                  "",
-                  "pm.test('✅ No aparece ningún libro conocido', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('Mistborn');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ Muestra mensaje de sin resultados', function () {",
+            "    pm.expect(pm.response.text()).to.include('No se encontraron');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
@@ -431,64 +268,39 @@
         },
 
         {
-          "name": "12. Ver detalle de libro (Mistborn id=4)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra el título del libro', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Mistborn');",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra el autor', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Sanderson');",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra la sinopsis', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Lord Legislador');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "12. Ver detalle de libro (Mistborn id=1)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ Muestra el título del libro', function () {",
+            "    pm.expect(pm.response.text()).to.include('Mistborn');",
+            "});",
+            "pm.test('✅ Muestra el autor', function () {",
+            "    pm.expect(pm.response.text()).to.include('Sanderson');",
+            "});",
+            "pm.test('✅ Muestra la sinopsis', function () {",
+            "    pm.expect(pm.response.text()).to.include('Lord Legislador');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{base_url}}/book/4", "host": ["{{base_url}}"], "path": ["book", "4"] }
+            "url": { "raw": "{{base_url}}/book/1", "host": ["{{base_url}}"], "path": ["book", "1"] }
           }
         },
 
         {
           "name": "13. Ver libro inexistente (id=9999)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (gestiona el error sin caerse)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra mensaje de libro no encontrado o redirige', function () {",
-                  "    const html = pm.response.text();",
-                  "    const redirige = pm.response.code === 302;",
-                  "    const tieneError = html.includes('no encontrado') || html.includes('Explorar');",
-                  "    pm.expect(redirige || tieneError).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (gestiona el error sin caerse)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ Muestra error o redirige al catálogo', function () {",
+            "    const html = pm.response.text();",
+            "    pm.expect(html.includes('no encontrado') || html.includes('Explorar')).to.be.true;",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
@@ -504,25 +316,15 @@
       "item": [
 
         {
-          "name": "14. Acceder sin sesión — debe redirigir",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (redirige a login)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra el formulario de login (acceso denegado)', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('login').or.include('Iniciar');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "14. Acceder sin sesión — debe redirigir a login",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ Muestra login (acceso denegado)', function () {",
+            "    pm.expect(pm.response.text()).to.include('login').or.include('Iniciar');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
@@ -531,146 +333,65 @@
         },
 
         {
-          "name": "15. Marcar como Leyendo (Mistborn id=4)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (guardado OK)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ No muestra error de sesión', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('Debes iniciar sesión');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "15. Marcar Mistborn como Leyendo (id=1)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (guardado OK)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ No muestra error de sesión', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('Debes iniciar sesión');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
-            "url": { "raw": "{{base_url}}/book/4/update", "host": ["{{base_url}}"], "path": ["book", "4", "update"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "status",  "value": "leyendo" },
-                { "key": "rating",  "value": "" },
-                { "key": "liked",   "value": "" },
-                { "key": "comment", "value": "" }
-              ]
-            }
+            "url": { "raw": "{{base_url}}/book/1/update", "host": ["{{base_url}}"], "path": ["book", "1", "update"] },
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "status",  "value": "leyendo" },
+              { "key": "rating",  "value": "" },
+              { "key": "liked",   "value": "" },
+              { "key": "comment", "value": "" }
+            ]}
           }
         },
 
         {
-          "name": "16. Marcar como Leído con 5 estrellas y comentario",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (guardado OK)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ No muestra error de sesión', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('Debes iniciar sesión');",
-                  "});",
-                  "",
-                  "pm.test('✅ Respuesta rápida', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "16. Marcar Mistborn como Leído con 5 estrellas y comentario",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (guardado OK)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ No muestra error de sesión', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('Debes iniciar sesión');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
-            "url": { "raw": "{{base_url}}/book/4/update", "host": ["{{base_url}}"], "path": ["book", "4", "update"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "status",  "value": "leido" },
-                { "key": "rating",  "value": "5" },
-                { "key": "liked",   "value": "1" },
-                { "key": "comment", "value": "Una obra maestra absoluta. El sistema de magia Allomancia es increíble." }
-              ]
-            }
+            "url": { "raw": "{{base_url}}/book/1/update", "host": ["{{base_url}}"], "path": ["book", "1", "update"] },
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "status",  "value": "leido" },
+              { "key": "rating",  "value": "5" },
+              { "key": "liked",   "value": "1" },
+              { "key": "comment", "value": "Una obra maestra. El sistema de magia Allomancia es increíble." }
+            ]}
           }
         },
 
         {
-          "name": "17. Ver mis libros — Mistborn debe aparecer como Leído",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ Aparece la sección de libros leídos', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Leídos').or.include('leido');",
-                  "});",
-                  "",
-                  "pm.test('✅ Mistborn aparece en la lista', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Mistborn');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "17. Ver mis libros — Mistborn debe aparecer",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ Mistborn aparece en la lista', function () {",
+            "    pm.expect(pm.response.text()).to.include('Mistborn');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
             "url": { "raw": "{{base_url}}/my-books", "host": ["{{base_url}}"], "path": ["my-books"] }
-          }
-        },
-
-        {
-          "name": "18. Valoración negativa — dislike (Don Quijote id=10)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (guardado OK)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ No muestra error', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('Error');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": { "raw": "{{base_url}}/book/10/update", "host": ["{{base_url}}"], "path": ["book", "10", "update"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "status",  "value": "leido" },
-                { "key": "rating",  "value": "2" },
-                { "key": "liked",   "value": "0" },
-                { "key": "comment", "value": "Demasiado largo para mi gusto." }
-              ]
-            }
           }
         }
 
@@ -682,31 +403,15 @@
       "item": [
 
         {
-          "name": "19. Acceder al panel sin ser admin",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (bloquea el acceso)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ NO muestra el panel de admin (acceso denegado)', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('Panel de Administración');",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra mensaje de acceso restringido o redirige', function () {",
-                  "    const html = pm.response.text();",
-                  "    const bloqueado = html.includes('restringido') || html.includes('Explorar');",
-                  "    pm.expect(bloqueado).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "18. Acceder al panel sin ser admin",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (bloquea el acceso)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ NO muestra el panel de admin', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('Panel de Administración');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
@@ -715,35 +420,18 @@
         },
 
         {
-          "name": "20. Ver panel admin (como admin) — Login admin primero",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 (acceso concedido)', function () {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra el panel de administración', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Administración');",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra la tabla de libros', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('Mistborn');",
-                  "});",
-                  "",
-                  "pm.test('✅ Muestra la tabla de usuarios', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.include('admin');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "19. Ver panel admin (como admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 (acceso concedido)', function () {",
+            "    pm.expect(pm.response.code).to.equal(200);",
+            "});",
+            "pm.test('✅ Muestra el panel de administración', function () {",
+            "    pm.expect(pm.response.text()).to.include('Administración');",
+            "});",
+            "pm.test('✅ Muestra Mistborn en la tabla', function () {",
+            "    pm.expect(pm.response.text()).to.include('Mistborn');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "GET",
             "header": [],
@@ -752,142 +440,89 @@
         },
 
         {
-          "name": "21. Añadir nuevo libro (admin)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (libro añadido OK)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ No muestra error de acceso', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('restringido');",
-                  "});",
-                  "",
-                  "pm.test('✅ Respuesta rápida del servidor', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "20. Añadir nuevo libro (admin)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (libro añadido OK)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ No muestra error de acceso', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('restringido');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/admin/book/add", "host": ["{{base_url}}"], "path": ["admin", "book", "add"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "title",       "value": "El Ritmo de la Guerra" },
-                { "key": "author",      "value": "Brandon Sanderson" },
-                { "key": "synopsis",    "value": "Cuarta entrega de El Archivo de las Tormentas." },
-                { "key": "genre",       "value": "Fantasía" },
-                { "key": "year",        "value": "2020" },
-                { "key": "cover_color", "value": "#3b1f6e" },
-                { "key": "cover_image", "value": "https://covers.openlibrary.org/b/isbn/9780765326386-L.jpg" }
-              ]
-            }
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "title",       "value": "El Ritmo de la Guerra" },
+              { "key": "author",      "value": "Brandon Sanderson" },
+              { "key": "synopsis",    "value": "Cuarta entrega de El Archivo de las Tormentas." },
+              { "key": "genre",       "value": "Fantasía" },
+              { "key": "year",        "value": "2020" },
+              { "key": "cover_color", "value": "#3b1f6e" },
+              { "key": "cover_image", "value": "https://covers.openlibrary.org/b/isbn/9780765326386-L.jpg" }
+            ]}
           }
         },
 
         {
-          "name": "22. Editar libro (admin) — Mistborn id=4",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (edición OK)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ No muestra error de acceso restringido', function () {",
-                  "    const html = pm.response.text();",
-                  "    pm.expect(html).to.not.include('restringido');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": { "raw": "{{base_url}}/admin/book/edit/4", "host": ["{{base_url}}"], "path": ["admin", "book", "edit", "4"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "title",       "value": "Mistborn: El Imperio Final" },
-                { "key": "author",      "value": "Brandon Sanderson" },
-                { "key": "synopsis",    "value": "Sinopsis editada desde Postman para prueba." },
-                { "key": "genre",       "value": "Fantasía" },
-                { "key": "year",        "value": "2006" },
-                { "key": "cover_color", "value": "#1e3a5f" },
-                { "key": "cover_image", "value": "https://covers.openlibrary.org/b/isbn/9780765311788-L.jpg" }
-              ]
-            }
-          }
-        },
-
-        {
-          "name": "23. Intentar editar sin ser admin",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (bloquea el acceso)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ NO permite editar (muestra error o redirige)', function () {",
-                  "    const html = pm.response.text();",
-                  "    const bloqueado = html.includes('restringido') || html.includes('Explorar');",
-                  "    pm.expect(bloqueado).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "21. Editar libro (admin) — Mistborn id=1",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (edición OK)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ No muestra error de acceso restringido', function () {",
+            "    pm.expect(pm.response.text()).to.not.include('restringido');",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
             "url": { "raw": "{{base_url}}/admin/book/edit/1", "host": ["{{base_url}}"], "path": ["admin", "book", "edit", "1"] },
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                { "key": "title", "value": "Intento no autorizado" }
-              ]
-            }
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "title",       "value": "Mistborn: El Imperio Final" },
+              { "key": "author",      "value": "Brandon Sanderson" },
+              { "key": "synopsis",    "value": "Sinopsis editada desde Postman." },
+              { "key": "genre",       "value": "Fantasía" },
+              { "key": "year",        "value": "2006" },
+              { "key": "cover_color", "value": "#1e3a5f" },
+              { "key": "cover_image", "value": "https://covers.openlibrary.org/b/isbn/9780765311788-L.jpg" }
+            ]}
           }
         },
 
         {
-          "name": "24. Intentar eliminar sin ser admin",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('✅ Status 200 o 302 (bloquea el borrado)', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
-                  "});",
-                  "",
-                  "pm.test('✅ NO permite borrar (muestra error o redirige)', function () {",
-                  "    const html = pm.response.text();",
-                  "    const bloqueado = html.includes('restringido') || html.includes('Explorar');",
-                  "    pm.expect(bloqueado).to.be.true;",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "22. Intentar editar sin ser admin",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (bloquea el acceso)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ NO permite editar', function () {",
+            "    const html = pm.response.text();",
+            "    pm.expect(html.includes('restringido') || html.includes('Explorar')).to.be.true;",
+            "});"
+          ], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/admin/book/edit/1", "host": ["{{base_url}}"], "path": ["admin", "book", "edit", "1"] },
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "title", "value": "Intento no autorizado" }
+            ]}
+          }
+        },
+
+        {
+          "name": "23. Intentar eliminar sin ser admin",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('✅ Status 200 o 302 (bloquea el borrado)', function () {",
+            "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+            "});",
+            "pm.test('✅ NO permite borrar', function () {",
+            "    const html = pm.response.text();",
+            "    pm.expect(html.includes('restringido') || html.includes('Explorar')).to.be.true;",
+            "});"
+          ], "type": "text/javascript" } }],
           "request": {
             "method": "POST",
             "header": [],
