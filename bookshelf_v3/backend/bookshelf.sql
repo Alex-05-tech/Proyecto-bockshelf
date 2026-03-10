@@ -72,12 +72,9 @@ CREATE TABLE `user_books` (
 -- ============================================================
 
 -- ── Admin por defecto (contraseña: admin123) ──────────────
+-- Hash SHA-256 de "admin123" + salt "bookshelf_salt_2024"
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `is_admin`, `created_at`) VALUES
-<<<<<<< HEAD
-(1, 'admin', 'admin@bookshelf.com', '53a696c7307408c9bc49f8aef1330e987be4897e5b3c644b5b8f994544609296', 1, NOW());
-=======
 (1, 'admin', 'admin@bookshelf.com', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 1, NOW());
->>>>>>> ea6ff25862ca2b51a79dd2fc9228e85846b4e69e
 
 -- ── Libros ────────────────────────────────────────────────
 INSERT INTO `books` (`id`, `title`, `author`, `synopsis`, `genre`, `year`, `cover_color`, `cover_image`, `created_by`, `orden`) VALUES
@@ -87,33 +84,21 @@ INSERT INTO `books` (`id`, `title`, `author`, `synopsis`, `genre`, `year`, `cove
     'Brandon Sanderson',
     'Durante mil años el Lord Legislador ha gobernado un mundo de cenizas y niebla. Una ladrona de élite y su banda de forajidos planean la revolución más imposible de la historia.',
     'Fantasía', 2006, '#1e3a5f',
-<<<<<<< HEAD
-    'https://static.wikia.nocookie.net/nacidos-de-la-bruma/images/8/82/Nacidos_de_la_Bruma_El_imperio_final.png/revision/latest?cb=20190708125835&path-prefix=es',
-=======
     'https://covers.openlibrary.org/b/isbn/9780765311788-L.jpg',
->>>>>>> ea6ff25862ca2b51a79dd2fc9228e85846b4e69e
     1, 1),
 
 (2, 'El Pozo de la Ascensión',
     'Brandon Sanderson',
     'Segunda parte de la trilogía Mistborn. Vin y Elend intentan gobernar una ciudad asediada mientras mistborn enemigos y un antiguo mal despiertan en las brumas.',
     'Fantasía', 2007, '#1e3a8a',
-<<<<<<< HEAD
-    'https://static.wikia.nocookie.net/nacidos-de-la-bruma/images/7/70/Nacidos_de_la_Bruma_El_Pozo_de_la_Ascensi%C3%B3n.png/revision/latest/scale-to-width-down/1000?cb=20190708130135&path-prefix=es',
-=======
     'https://covers.openlibrary.org/b/isbn/9780765316882-L.jpg',
->>>>>>> ea6ff25862ca2b51a79dd2fc9228e85846b4e69e
     1, 2),
 
 (3, 'El Héroe de las Eras',
     'Brandon Sanderson',
     'Conclusión de la trilogía Mistborn. Los secretos del Lord Legislador se revelan mientras el mundo se acerca al fin. Vin y Elend afrontan su destino final.',
     'Fantasía', 2008, '#172554',
-<<<<<<< HEAD
-    'https://static.wikia.nocookie.net/nacidos-de-la-bruma/images/7/74/Nacidos_de_la_Bruma_El_H%C3%A9roe_de_las_Eras.png/revision/latest/scale-to-width-down/1000?cb=20190708130228&path-prefix=es',
-=======
     'https://covers.openlibrary.org/b/isbn/9780765356147-L.jpg',
->>>>>>> ea6ff25862ca2b51a79dd2fc9228e85846b4e69e
     1, 3),
 
 -- Otros autores intercalados (4-6)
@@ -200,11 +185,7 @@ INSERT INTO `books` (`id`, `title`, `author`, `synopsis`, `genre`, `year`, `cove
      'Brandon Sanderson',
      'En el mundo de Roshar, Lift es una joven con poderes únicos que puede convertir comida en energía espiritual. Esta novela corta explora su historia mientras se enfrenta a un misterioso inquisidor conocido como el Susurrador de Pesadillas en las calles de Yeddaw.',
      'Fantasía', 2016, '#0f4c3a',
-<<<<<<< HEAD
-     'https://uploads.coppermind.net/thumb/Tress_US_Cover.jpg/300px-Tress_US_Cover.jpg',
-=======
      'https://covers.openlibrary.org/b/isbn/9780765387561-L.jpg',
->>>>>>> ea6ff25862ca2b51a79dd2fc9228e85846b4e69e
      1, 15);
 
 -- ── Restaurar AUTO_INCREMENT ──────────────────────────────
