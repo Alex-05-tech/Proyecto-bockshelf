@@ -26,7 +26,7 @@ jobs:
           --health-cmd="mysqladmin ping -h localhost -u root -prootpassword"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=15
 
     steps:
       - uses: actions/checkout@v4
@@ -34,6 +34,18 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r bookshelf_v3/backend/requirements.txt && pip install pytest requests
+
+      - name: Esperar a que MySQL esté listo
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -prootpassword --silent; then
+              echo "MySQL listo ✓"
+              break
+            fi
+            echo "Esperando MySQL... intento $i"
+            sleep 3
+          done
+
       - run: mysql -h 127.0.0.1 -P 3306 -u root -prootpassword < bookshelf_v3/backend/bookshelf.sql
       - run: cd bookshelf_v3/backend && DB_HOST=127.0.0.1 DB_USER=bookshelf_user DB_PASSWORD=bookshelf_pass DB_NAME=bookshelf python app.py & sleep 5
       - run: curl --fail http://localhost:5000/api/health && echo "Backend OK ✓"
