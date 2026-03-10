@@ -46,7 +46,11 @@ jobs:
             sleep 3
           done
 
-      - run: mysql -h 127.0.0.1 -P 3306 -u root -prootpassword < bookshelf_v3/backend/bookshelf.sql
+      - name: Inicializar base de datos
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -prootpassword bookshelf < bookshelf_v3/backend/bookshelf.sql
+          echo "Base de datos inicializada ✓"
+
       - run: cd bookshelf_v3/backend && DB_HOST=127.0.0.1 DB_USER=bookshelf_user DB_PASSWORD=bookshelf_pass DB_NAME=bookshelf python app.py & sleep 5
       - run: curl --fail http://localhost:5000/api/health && echo "Backend OK ✓"
 
