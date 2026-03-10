@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Iniciar Sesión — Bookshelf{% endblock %}
+{% block content %}
+
+<div class="auth-wrap">
+  <div class="auth-logo">
+    <div class="icon">📚</div>
+    <h2>Bienvenido de nuevo</h2>
+    <p>Inicia sesión para acceder a tu biblioteca</p>
+  </div>
+
+  <div class="card" style="padding:2rem;">
+    <form method="post">
+      <div class="form-group">
+        <label class="form-label">Usuario</label>
+        <input type="text" name="username" class="form-control" required
+               placeholder="Tu nombre de usuario" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input type="password" name="password" class="form-control" required
+               placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">
+        Iniciar sesión
+      </button>
+    </form>
+  </div>
+
+  <div class="auth-footer">
+    ¿No tienes cuenta? <a href="{{ url_for('register') }}">Regístrate gratis</a>
+  </div>
+
+  <div style="margin-top:2rem; padding:1rem; background:var(--paper-warm); border:1px solid var(--border); border-radius:8px; font-size:0.82rem; color:var(--ink-muted);">
+    <strong style="color:var(--ink);">🔑 Admin por defecto:</strong><br>
+    Usuario: <code>admin</code> · Contraseña: <code>admin123</code>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Mis Libros — Bookshelf{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h2>🗂 Mis Libros</h2>
+  <p>Hola, <strong>{{ session.username }}</strong> — aquí tienes tu biblioteca personal</p>
+</div>
+
+{% macro book_row(b) %}
+<a href="{{ url_for('book_detail', bid=b.id) }}" style="text-decoration:none; color:inherit;">
+  <div style="display:flex; align-items:center; gap:1rem; padding:0.9rem 1rem; border-bottom:1px solid var(--border); transition:background 0.15s;"
+       onmouseover="this.style.background='var(--paper-warm)'" onmouseout="this.style.background=''">
+
+    <!-- Miniatura portada -->
+    {% if b.cover_image %}
+      <img src="{{ b.cover_image }}" alt="{{ b.title }}"
+           style="width:42px; height:63px; object-fit:cover; border-radius:3px 5px 5px 3px; flex-shrink:0; box-shadow:2px 2px 5px rgba(0,0,0,0.2);"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+      <div style="width:42px; height:63px; border-radius:3px 5px 5px 3px; background-color:{{ b.cover_color }}; flex-shrink:0; box-shadow:2px 2px 5px rgba(0,0,0,0.2); display:none;"></div>
+    {% else %}
+      <div style="width:42px; height:63px; border-radius:3px 5px 5px 3px; background-color:{{ b.cover_color }}; flex-shrink:0; box-shadow:2px 2px 5px rgba(0,0,0,0.2);"></div>
+    {% endif %}
+
+    <div style="flex:1; min-width:0;">
+      <div style="font-weight:700; font-size:0.93rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ b.title }}</div>
+      <div style="font-size:0.82rem; color:var(--ink-muted); font-style:italic;">{{ b.author }}</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:0.8rem; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;">
+      {% if b.liked == 1 %}<span style="color:#dc2626;">❤️</span>{% elif b.liked == 0 %}<span>👎</span>{% endif %}
+      {% if b.rating %}
+        <div class="stars">
+          {% for i in range(1,6) %}<span class="star {% if i <= b.rating %}on{% endif %}">★</span>{% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</a>
+{% endmacro %}
+
+{% set total = reading|length + read|length + want|length %}
+{% if total == 0 %}
+<div class="empty-state">
+  <div class="icon">📭</div>
+  <p>Aún no has añadido ningún libro a tu biblioteca.</p>
+  <a href="{{ url_for('index') }}" class="btn btn-primary" style="margin-top:1.2rem;">Explorar libros</a>
+</div>
+{% else %}
+
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:2.5rem;">
+  {% for label, count, icon, color in [
+      ('Leyendo', reading|length, '📖', '#1d4ed8'),
+      ('Leídos',  read|length,    '✅', '#166534'),
+      ('Pendientes', want|length, '📋', '#374151')] %}
+  <div class="card" style="padding:1.2rem; text-align:center; border-top:3px solid {{ color }};">
+    <div style="font-size:1.8rem;">{{ icon }}</div>
+    <div style="font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; color:{{ color }};">{{ count }}</div>
+    <div style="font-size:0.8rem; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.05em;">{{ label }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if reading %}
+<div class="section-title">📖 Leyendo ahora</div>
+<div class="card" style="margin-bottom:2rem; overflow:hidden;">
+  {% for b in reading %}{{ book_row(b) }}{% endfor %}
+</div>
+{% endif %}
+
+{% if read %}
+<div class="section-title">✅ Libros leídos</div>
+<div class="card" style="margin-bottom:2rem; overflow:hidden;">
+  {% for b in read %}{{ book_row(b) }}{% endfor %}
+</div>
+{% endif %}
+
+{% if want %}
+<div class="section-title">📋 Quiero leer</div>
+<div class="card" style="overflow:hidden;">
+  {% for b in want %}{{ book_row(b) }}{% endfor %}
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Libro — Bookshelf{% endblock %}
+{% block content %}
+
+<div style="max-width:720px; margin:0 auto;">
+  <a href="{{ url_for('admin') }}" style="color:var(--ink-muted); text-decoration:none; font-size:0.88rem; display:inline-flex; align-items:center; gap:0.3rem; margin-bottom:1.5rem;">
+    ← Volver al panel
+  </a>
+
+  <div class="page-header">
+    <h2>{{ '📗' if action == 'Añadir' else '✏️' }} {{ action }} Libro</h2>
+    <p>{{ 'Añade un nuevo libro al catálogo.' if action == 'Añadir' else 'Modifica la información del libro.' }}</p>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 200px; gap:2rem; align-items:start;">
+
+    <!-- FORMULARIO -->
+    <div class="card" style="padding:2rem;">
+      <form method="post" id="bookForm">
+        <div class="form-group">
+          <label class="form-label">Título *</label>
+          <input type="text" name="title" class="form-control" required
+                 value="{{ book.title if book else '' }}" placeholder="El nombre del libro…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Autor *</label>
+          <input type="text" name="author" class="form-control" required
+                 value="{{ book.author if book else '' }}" placeholder="Nombre del autor…">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="form-group">
+            <label class="form-label">Género</label>
+            <input type="text" name="genre" class="form-control"
+                   value="{{ book.genre if book else '' }}" placeholder="Fantasía, Misterio…">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Año</label>
+            <input type="number" name="year" class="form-control"
+                   min="0" max="2030"
+                   value="{{ book.year if book and book.year else '' }}" placeholder="2024">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sinopsis</label>
+          <textarea name="synopsis" class="form-control" style="min-height:120px;"
+                    placeholder="Escribe una breve descripción del libro…">{{ book.synopsis if book else '' }}</textarea>
+        </div>
+
+        <!-- URL PORTADA -->
+        <div class="form-group">
+          <label class="form-label">URL de la portada</label>
+          <input type="url" name="cover_image" id="coverUrlInput" class="form-control"
+                 value="{{ book.cover_image if book and book.cover_image else '' }}"
+                 placeholder="https://covers.openlibrary.org/b/isbn/...">
+          <div style="margin-top:0.4rem; font-size:0.78rem; color:var(--ink-muted);">
+            💡 Puedes encontrar portadas en
+            <a href="https://covers.openlibrary.org" target="_blank" style="color:var(--accent);">OpenLibrary</a>
+            o buscando el ISBN del libro. Deja en blanco para usar el color de fondo.
+          </div>
+        </div>
+
+        <!-- COLOR FALLBACK -->
+        <div class="form-group">
+          <label class="form-label">Color de portada <span style="font-weight:400; color:var(--ink-muted);">(si no hay imagen)</span></label>
+          <div style="display:flex; gap:0.7rem; align-items:center; flex-wrap:wrap;">
+            <input type="color" name="cover_color" id="colorPicker"
+                   value="{{ book.cover_color if book else '#7c6f64' }}"
+                   style="width:44px; height:44px; border:2px solid var(--border); border-radius:6px; cursor:pointer; background:none; padding:2px;">
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+              {% for c in ['#7c6f64','#5b4fcf','#7c3aed','#1e3a5f','#155e75','#065f46','#b45309','#991b1b','#7e1d5f','#374151','#2a6b4f','#9a3412'] %}
+              <div onclick="document.getElementById('colorPicker').value='{{ c }}'; updatePreview();"
+                   style="width:24px; height:24px; border-radius:50%; background:{{ c }}; cursor:pointer; border:2px solid transparent; transition:border-color 0.15s;"
+                   onmouseover="this.style.borderColor='var(--ink)'" onmouseout="this.style.borderColor='transparent'">
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.8rem; flex-wrap:wrap; margin-top:0.5rem;">
+          <button type="submit" class="btn btn-primary">{{ '➕ Añadir Libro' if action == 'Añadir' else '💾 Guardar Cambios' }}</button>
+          <a href="{{ url_for('admin') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- PREVIEW -->
+    <div>
+      <div style="font-size:0.78rem; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:700; margin-bottom:0.6rem;">Vista previa</div>
+      <div style="position:relative; width:100%; aspect-ratio:2/3; border-radius:6px 10px 10px 6px; overflow:hidden; box-shadow:4px 4px 12px rgba(0,0,0,0.30);">
+        <img id="previewImg"
+             src="{{ book.cover_image if book and book.cover_image else '' }}"
+             alt="Vista previa"
+             style="width:100%; height:100%; object-fit:cover; display:{{ 'block' if book and book.cover_image else 'none' }};"
+             onerror="this.style.display='none'; document.getElementById('previewColor').style.display='flex';">
+        <div id="previewColor"
+             style="position:absolute; inset:0; background-color:{{ book.cover_color if book else '#7c6f64' }};
+                    display:{{ 'none' if book and book.cover_image else 'flex' }};
+                    align-items:center; justify-content:center; color:rgba(255,255,255,0.7); font-size:0.8rem; text-align:center; padding:0.5rem;">
+          Sin imagen
+        </div>
+      </div>
+      <div style="margin-top:0.8rem; font-size:0.78rem; color:var(--ink-muted); text-align:center; font-style:italic;">
+        Actualiza en tiempo real
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const urlInput   = document.getElementById('coverUrlInput');
+  const colorPicker = document.getElementById('colorPicker');
+  const previewImg  = document.getElementById('previewImg');
+  const previewColor = document.getElementById('previewColor');
+
+  function updatePreview() {
+    const url = urlInput.value.trim();
+    previewColor.style.backgroundColor = colorPicker.value;
+    if (url) {
+      previewImg.src = url;
+      previewImg.style.display = 'block';
+      previewColor.style.display = 'none';
+    } else {
+      previewImg.style.display = 'none';
+      previewColor.style.display = 'flex';
+    }
+  }
+
+  urlInput.addEventListener('input', updatePreview);
+  colorPicker.addEventListener('input', updatePreview);
+
+  previewImg.addEventListener('error', () => {
+    previewImg.style.display = 'none';
+    previewColor.style.display = 'flex';
+  });
+</script>
+
+{% endblock %}
