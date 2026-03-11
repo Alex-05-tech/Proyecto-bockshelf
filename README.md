@@ -169,7 +169,6 @@ Pruebas que verifican que las medidas OWASP implementadas funcionan correctament
 =======
 
 
->>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 ```bash
 cd bookshelf_v3/backend
 pytest tests/ -v
@@ -190,3 +189,54 @@ pytest tests/ -v
 | A07 | Autenticación           | Sesiones Flask y mensajes de error genéricos     |
 | A08 | Integridad              | Pipeline CI/CD que verifica cada commit          |
 | A09 | Logging                 | Registro de eventos de seguridad                 |
+
+## 🔐 Seguridad — OWASP Top 10 API Security
+
+| # | Vulnerabilidad | Medida Aplicada |
+|:-:|:---|:---|
+| `API1` | **Broken Object Level Authorization**      | Cada endpoint valida que el usuario accede solo a sus propios datos |
+| `API2` | **Broken Authentication**                  | Sesiones Flask con `SECRET_KEY` y expiración de sesión configurada |
+| `API3` | **Broken Object Property Level Auth**      | La API devuelve únicamente los campos necesarios en cada respuesta |
+| `API4` | **Unrestricted Resource Consumption**      | Rate limiting en login — máximo 5 intentos cada 5 minutos |
+| `API5` | **Broken Function Level Authorization**    | Endpoints de admin protegidos con el decorador `@admin_required` |
+| `API6` | **Unrestricted Access to Sensitive Flows** | Registro y login con validación estricta y límites de acceso |
+| `API7` | **Server Side Request Forgery**            | Riesgo bajo — no se realizan peticiones a URLs externas |
+| `API8` | **Security Misconfiguration**              | Cabeceras HTTP de seguridad aplicadas en todas las respuestas |
+| `API9` | **Improper Inventory Management**          | Entorno único y controlado mediante Docker y CI/CD |
+| `API10` | **Unsafe Consumption of APIs**            | El frontend valida y sanitiza todas las respuestas del backend |
+
+## 🔐 Dónde está implementado OWASP en el código
+
+### `bookshelf_v3/backend/app.py`
+
+| OWASP | Función / Sección | Qué hace |
+|-------|-------------------|----------|
+| A01   | `def require_auth(f)`                | Bloquea endpoints sin cabecera `X-User-Id` |
+| A02   | `def hash_pw(pw)`                    | SHA-256 + salt desde variable de entorno |
+| A03   | `def validate_username / validate_email / validate_password` | Valida formato y longitud de inputs |
+| A03   | Todas las queries SQL                | Usan `%s` con parámetros, nunca concatenación directa |
+| A04   | `def check_rate_limit(ip)`           | Máximo 5 intentos por IP en 5 minutos |
+| A05   | `def add_security_headers(response)` | Añade `X-Frame-Options`, `X-XSS-Protection`, etc. |
+| A07   | `def login()` → mensaje de error     | Siempre devuelve `"Usuario o contraseña incorrectos"` |
+| A09   | `logger.warning / logger.info`       | Registra logins correctos, fallidos y rate limit |
+
+### `bookshelf_v3/frontend/app.py`
+
+| OWASP | Función / Sección | Qué hace |
+|-------|-------------------|----------|
+| A01   | `def login_required(f)` | Protege rutas que requieren sesión activa |
+| A01   | `def admin_required(f)` | Protege rutas exclusivas de administrador |
+| A01   | `def auth_headers()`    | Envía `X-User-Id` al backend en cada petición |
+
+### `bookshelf_v3/backend/bookshelf.sql`
+
+| OWASP | Sección | Qué hace |
+|-------|---------|----------|
+| A02   | Hash del usuario admin | Contraseña almacenada como SHA-256 + salt, nunca en texto plano |
+
+### `docker-compose.yml`
+
+| OWASP | Sección | Qué hace |
+|-------|---------|----------|
+| A05   | `environment` de cada servicio          | `SECRET_KEY` y credenciales fuera del código fuente |
+| A08   | Junto con `.github/workflows/ci-cd.yml` | Pipeline que verifica cada commit antes de desplegar |
