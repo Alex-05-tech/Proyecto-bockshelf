@@ -8,8 +8,15 @@ app = Flask(__name__,
 
 app.secret_key = os.environ.get('SECRET_KEY', 'bookshelf_secret_2024')
 
+<<<<<<< HEAD
 API = os.environ.get('API_URL', 'http://localhost:5000')
 
+=======
+# URL del backend (en Docker viene de variable de entorno, en local apunta a localhost)
+API = os.environ.get('API_URL', 'http://localhost:5000')
+
+# ── Decoradores ───────────────────────────────────────────────────────────────
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 from functools import wraps
 
 def login_required(f):
@@ -32,10 +39,13 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrapped
 
+<<<<<<< HEAD
 def auth_headers():
     """Cabecera de autenticación para peticiones al backend."""
     return {'X-User-Id': str(session.get('user_id', ''))}
 
+=======
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 # ── Rutas principales ─────────────────────────────────────────────────────────
 @app.route('/')
 def index():
@@ -50,10 +60,17 @@ def index():
     books  = data.get('books', [])
     genres = data.get('genres', [])
 
+<<<<<<< HEAD
     user_books = {}
     if 'user_id' in session:
         r2 = req.get(f'{API}/api/user/{session["user_id"]}/books',
                      headers=auth_headers())
+=======
+    # Estado de cada libro para el usuario logueado
+    user_books = {}
+    if 'user_id' in session:
+        r2 = req.get(f'{API}/api/user/{session["user_id"]}/books')
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
         for b in r2.json().get('books', []):
             user_books[b['id']] = b
 
@@ -73,8 +90,12 @@ def book_detail(bid):
 
     user_book = None
     if 'user_id' in session:
+<<<<<<< HEAD
         r2 = req.get(f'{API}/api/user/{session["user_id"]}/books/{bid}',
                      headers=auth_headers())
+=======
+        r2 = req.get(f'{API}/api/user/{session["user_id"]}/books/{bid}')
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
         user_book = r2.json().get('user_book')
 
     return render_template('book_detail.html', book=book, reviews=reviews,
@@ -90,16 +111,24 @@ def update_user_book(bid):
         'liked':   int(liked_v) if liked_v != '' else None,
         'comment': request.form.get('comment', '').strip()
     }
+<<<<<<< HEAD
     req.post(f'{API}/api/user/{session["user_id"]}/books/{bid}',
              json=payload, headers=auth_headers())
+=======
+    req.post(f'{API}/api/user/{session["user_id"]}/books/{bid}', json=payload)
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
     flash('¡Tu lectura ha sido actualizada!', 'success')
     return redirect(url_for('book_detail', bid=bid))
 
 @app.route('/my-books')
 @login_required
 def my_books():
+<<<<<<< HEAD
     r = req.get(f'{API}/api/user/{session["user_id"]}/books',
                 headers=auth_headers())
+=======
+    r = req.get(f'{API}/api/user/{session["user_id"]}/books')
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
     all_books = r.json().get('books', [])
     reading = [b for b in all_books if b['status'] == 'leyendo']
     read    = [b for b in all_books if b['status'] == 'leido']
@@ -127,7 +156,11 @@ def add_book():
             'cover_image': request.form.get('cover_image','').strip() or None,
             'created_by':  session['user_id']
         }
+<<<<<<< HEAD
         req.post(f'{API}/api/books', json=payload, headers=auth_headers())
+=======
+        req.post(f'{API}/api/books', json=payload)
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
         flash('Libro añadido correctamente.', 'success')
         return redirect(url_for('admin'))
     return render_template('book_form.html', book=None, action='Añadir')
@@ -150,7 +183,11 @@ def edit_book(bid):
             'cover_color': request.form.get('cover_color','#7c6f64'),
             'cover_image': request.form.get('cover_image','').strip() or None,
         }
+<<<<<<< HEAD
         req.put(f'{API}/api/books/{bid}', json=payload, headers=auth_headers())
+=======
+        req.put(f'{API}/api/books/{bid}', json=payload)
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
         flash('Libro actualizado correctamente.', 'success')
         return redirect(url_for('admin'))
     return render_template('book_form.html', book=book, action='Editar')
@@ -158,7 +195,11 @@ def edit_book(bid):
 @app.route('/admin/book/delete/<int:bid>', methods=['POST'])
 @admin_required
 def delete_book(bid):
+<<<<<<< HEAD
     req.delete(f'{API}/api/books/{bid}', headers=auth_headers())
+=======
+    req.delete(f'{API}/api/books/{bid}')
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
     flash('Libro eliminado.', 'success')
     return redirect(url_for('admin'))
 

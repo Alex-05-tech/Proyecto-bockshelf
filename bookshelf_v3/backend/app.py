@@ -41,6 +41,7 @@ def check_rate_limit(ip):
     login_attempts[ip].append(now)
     return True
 
+<<<<<<< HEAD
 
 # ── Autenticación por token (A01 - OWASP) ────────────────────────────────────
 def require_auth(f):
@@ -52,6 +53,8 @@ def require_auth(f):
         return f(*args, **kwargs)
     return decorated
 
+=======
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 # ── Cabeceras de seguridad (A05 - OWASP) ─────────────────────────────────────
 @app.after_request
 def add_security_headers(response):
@@ -229,7 +232,10 @@ def get_book(bid):
     return jsonify({'book': book, 'reviews': reviews, 'stats': stats}), 200
 
 @app.route('/api/books', methods=['POST'])
+<<<<<<< HEAD
 @require_auth
+=======
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 def add_book():
     data = request.get_json()
 
@@ -255,7 +261,10 @@ def add_book():
     return jsonify({'ok': True, 'id': new_id}), 201
 
 @app.route('/api/books/<int:bid>', methods=['PUT'])
+<<<<<<< HEAD
 @require_auth
+=======
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 def edit_book(bid):
     data = request.get_json()
 
@@ -279,7 +288,10 @@ def edit_book(bid):
     return jsonify({'ok': True}), 200
 
 @app.route('/api/books/<int:bid>', methods=['DELETE'])
+<<<<<<< HEAD
 @require_auth
+=======
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 def delete_book(bid):
     conn = get_db()
     cur = conn.cursor()
@@ -294,7 +306,10 @@ def delete_book(bid):
 # ── USER BOOKS ────────────────────────────────────────────────────────────────
 
 @app.route('/api/user/<int:uid>/books', methods=['GET'])
+<<<<<<< HEAD
 @require_auth
+=======
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 def get_user_books(uid):
     conn = get_db()
     cur = conn.cursor(dictionary=True)
@@ -325,7 +340,10 @@ def get_user_book(uid, bid):
     return jsonify({'user_book': ub}), 200
 
 @app.route('/api/user/<int:uid>/books/<int:bid>', methods=['POST'])
+<<<<<<< HEAD
 @require_auth
+=======
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 def update_user_book(uid, bid):
     data    = request.get_json()
     status  = data.get('status', 'quiero_leer')

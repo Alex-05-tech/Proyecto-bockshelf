@@ -146,6 +146,7 @@ Fronrtend — `tests/frontend/`
 Imagen de comprobación:
 <img width="1375" height="245" alt="Captura de pantalla 2026-03-04 192317" src="https://github.com/user-attachments/assets/6f4d0087-ca21-49f0-befc-ba8bc3ac3ed4" />
 
+<<<<<<< HEAD
 ### Pruebas de seguridad OWASP — `tests/backend/test_seguridad.py`
 
 Pruebas que verifican que las medidas OWASP implementadas funcionan correctamente:
@@ -165,6 +166,10 @@ Pruebas que verifican que las medidas OWASP implementadas funcionan correctament
 | test_registro_email_invalido        | A03   | Email con formato inválido es rechazado             |
 
 ![alt text](image.png)
+=======
+
+
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 ```bash
 cd bookshelf_v3/backend
 pytest tests/ -v

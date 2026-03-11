@@ -72,7 +72,11 @@ CREATE TABLE `user_books` (
 
 -- ── Admin por defecto (contraseña: admin123) ──────────────
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `is_admin`, `created_at`) VALUES
+<<<<<<< HEAD
 (1, 'admin', 'admin@bookshelf.com', '53a696c7307408c9bc49f8aef1330e987be4897e5b3c644b5b8f994544609296', 1, NOW());
+=======
+(1, 'admin', 'admin@bookshelf.com', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 1, NOW());
+>>>>>>> 1e7743d2380a19f8f9754ed10483e1dadc537efb
 
 -- ── Libros ────────────────────────────────────────────────
 INSERT INTO `books` (`id`, `title`, `author`, `synopsis`, `genre`, `year`, `cover_color`, `cover_image`, `created_by`, `orden`) VALUES
