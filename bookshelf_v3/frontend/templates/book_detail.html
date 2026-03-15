@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}{{ book.title }} — Bookshelf{% endblock %}
+{% block content %}
+
+<a href="{{ url_for('index') }}" style="color:var(--ink-muted); text-decoration:none; font-size:0.88rem; display:inline-flex; align-items:center; gap:0.3rem; margin-bottom:1.5rem;">
+  ← Volver al catálogo
+</a>
+
+<div style="display:grid; grid-template-columns: 220px 1fr; gap: 3rem; align-items: start;">
+
+  <!-- PORTADA -->
+  <div>
+    {% if book.cover_image %}
+      <img src="{{ book.cover_image }}" alt="Portada de {{ book.title }}"
+           id="coverImg"
+           style="width:100%; aspect-ratio:2/3; object-fit:cover; border-radius:6px 10px 10px 6px;
+                  box-shadow: 4px 4px 16px rgba(0,0,0,0.35);"
+           onerror="this.style.display='none'; document.getElementById('coverFallback').style.display='flex';">
+      <div id="coverFallback" class="book-cover"
+           style="background-color:{{ book.cover_color }}; aspect-ratio:2/3; display:none; font-size:1rem; padding:1.2rem; text-align:center; align-items:center; justify-content:center;">
+        <div>
+          <div style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; line-height:1.3;">{{ book.title }}</div>
+          <div style="margin-top:0.5rem; opacity:0.8; font-size:0.82rem; font-style:italic;">{{ book.author }}</div>
+        </div>
+      </div>
+    {% else %}
+      <div class="book-cover"
+           style="background-color:{{ book.cover_color }}; aspect-ratio:2/3; font-size:1rem; padding:1.2rem; text-align:center; align-items:center; justify-content:center;">
+        <div>
+          <div style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; line-height:1.3;">{{ book.title }}</div>
+          <div style="margin-top:0.5rem; opacity:0.8; font-size:0.82rem; font-style:italic;">{{ book.author }}</div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div style="margin-top:1rem; display:flex; flex-wrap:wrap; gap:0.4rem; justify-content:center;">
+      {% if book.genre %}<span class="badge badge-genre">{{ book.genre }}</span>{% endif %}
+      {% if book.year %}<span class="badge badge-want">{{ book.year }}</span>{% endif %}
+    </div>
+
+    {% if stats and stats.total > 0 %}
+    <div style="margin-top:1.2rem; background:var(--paper-warm); border:1px solid var(--border); border-radius:8px; padding:1rem; text-align:center;">
+      <div style="font-family:'Playfair Display',serif; font-size:2rem; color:var(--gold); font-weight:700;">
+        {{ "%.1f"|format(stats.avg_r) }}
+      </div>
+      <div class="stars" style="justify-content:center; margin:0.2rem 0;">
+        {% for i in range(1,6) %}
+          <span class="star {% if stats.avg_r and i <= stats.avg_r|round %}on{% endif %}">★</span>
+        {% endfor %}
+      </div>
+      <div style="font-size:0.78rem; color:var(--ink-muted);">{{ stats.total }} valoración{{ 's' if stats.total != 1 }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- DETALLES -->
+  <div>
+    <h2 style="font-family:'Playfair Display',serif; font-size:2.3rem; line-height:1.2; font-weight:700;">{{ book.title }}</h2>
+    <p style="color:var(--accent); font-size:1.15rem; margin-top:0.4rem; font-style:italic;">{{ book.author }}</p>
+
+    {% if book.synopsis %}
+    <div style="margin-top:1.5rem; color:var(--ink-light); line-height:1.8; font-size:0.97rem; max-width:640px;">
+      {{ book.synopsis }}
+    </div>
+    {% endif %}
+
+    <hr class="divider">
+
+    {% if session.user_id %}
+    <div class="card" style="padding:1.5rem; max-width:580px;">
+      <div class="section-title">📝 Mi Registro de Lectura</div>
+      <form method="post" action="{{ url_for('update_user_book', bid=book.id) }}">
+        <div class="form-group">
+          <label class="form-label">Estado de lectura</label>
+          <select name="status" class="form-control">
+            <option value="quiero_leer" {% if user_book and user_book.status=='quiero_leer' %}selected{% endif %}>📋 Quiero leer</option>
+            <option value="leyendo"     {% if user_book and user_book.status=='leyendo'     %}selected{% endif %}>📖 Leyendo ahora</option>
+            <option value="leido"       {% if user_book and user_book.status=='leido'       %}selected{% endif %}>✅ Ya lo leí</option>
+          </select>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+          <div class="form-group">
+            <label class="form-label">Valoración</label>
+            <select name="rating" class="form-control">
+              <option value="">Sin valorar</option>
+              {% for i in range(1,6) %}
+              <option value="{{ i }}" {% if user_book and user_book.rating==i %}selected{% endif %}>
+                {{ '★'*i }}{{ '☆'*(5-i) }} — {{ i }}/5
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">¿Te ha gustado?</label>
+            <select name="liked" class="form-control">
+              <option value="">Sin opinión</option>
+              <option value="1" {% if user_book and user_book.liked==1 %}selected{% endif %}>❤️ Me ha gustado</option>
+              <option value="0" {% if user_book and user_book.liked==0 %}selected{% endif %}>👎 No me ha gustado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Comentario personal</label>
+          <textarea name="comment" class="form-control" placeholder="¿Qué te ha parecido este libro?…">{{ user_book.comment if user_book and user_book.comment else '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        {% if user_book %}
+          <span style="margin-left:1rem; font-size:0.8rem; color:var(--ink-muted);">
+            Actualizado el {{ user_book.updated_at[:10] if user_book.updated_at else '' }}
+          </span>
+        {% endif %}
+      </form>
+    </div>
+    {% else %}
+    <div style="background:var(--paper-warm); border:1px solid var(--border); border-radius:8px; padding:1.5rem; text-align:center; max-width:460px;">
+      <p style="color:var(--ink-muted); font-style:italic; margin-bottom:1rem;">
+        Inicia sesión para registrar tu lectura y dejar una valoración
+      </p>
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Iniciar sesión</a>
+      <a href="{{ url_for('register') }}" class="btn btn-secondary" style="margin-left:0.5rem;">Registrarse</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if reviews %}
+<hr class="divider">
+<div class="section-title">💬 Opiniones de los lectores</div>
+<div style="display:flex; flex-direction:column; gap:1rem; max-width:800px;">
+  {% for r in reviews %}
+  <div class="card" style="padding:1.2rem;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.7rem; flex-wrap:wrap; gap:0.5rem;">
+      <div style="display:flex; align-items:center; gap:0.8rem;">
+        <div style="width:38px; height:38px; border-radius:50%; background:var(--ink); color:var(--paper); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; flex-shrink:0;">
+          {{ r.username[0].upper() }}
+        </div>
+        <div>
+          <div style="font-weight:700; font-size:0.92rem;">{{ r.username }}</div>
+          <div style="font-size:0.78rem; color:var(--ink-muted);">
+            {% if r.status == 'leido' %}Leído{% elif r.status == 'leyendo' %}Leyendo{% else %}Pendiente{% endif %}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.8rem;">
+        {% if r.liked == 1 %}<span>❤️</span>{% elif r.liked == 0 %}<span>👎</span>{% endif %}
+        {% if r.rating %}
+          <div class="stars">
+            {% for i in range(1,6) %}
+              <span class="star {% if i <= r.rating %}on{% endif %}">★</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% if r.comment %}
+    <div style="color:var(--ink-light); font-size:0.92rem; line-height:1.7; padding-left:3rem; font-style:italic; border-left:3px solid var(--border); margin-left:1rem;">
+      "{{ r.comment }}"
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

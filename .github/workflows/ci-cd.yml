@@ -1,0 +1,79 @@
+name: Bookshelf CI/CD
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+
+  test-backend:
+    name: 🧪 Tests Backend
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: bookshelf
+          MYSQL_USER: bookshelf_user
+          MYSQL_PASSWORD: bookshelf_pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -prootpassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r bookshelf_v3/backend/requirements.txt && pip install pytest requests
+
+      - name: Esperar a que MySQL esté listo
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -prootpassword --silent; then
+              echo "MySQL listo ✓"
+              break
+            fi
+            echo "Esperando MySQL... intento $i"
+            sleep 3
+          done
+
+      - name: Inicializar base de datos
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -prootpassword bookshelf < bookshelf_v3/backend/bookshelf.sql
+          echo "Base de datos inicializada ✓"
+
+      - run: cd bookshelf_v3/backend && DB_HOST=127.0.0.1 DB_USER=bookshelf_user DB_PASSWORD=bookshelf_pass DB_NAME=bookshelf python app.py & sleep 5
+      - run: curl --fail http://localhost:5000/api/health && echo "Backend OK ✓"
+
+  test-frontend:
+    name: 🧪 Tests Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r bookshelf_v3/frontend/requirements.txt
+      - run: python -m py_compile bookshelf_v3/frontend/app.py && echo "Sintaxis OK ✓"
+
+  build-docker:
+    name: 🐳 Build Docker
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: cd bookshelf_v3 && docker compose up -d --build && sleep 20
+      - run: curl --fail --retry 5 --retry-delay 3 http://localhost:5000/api/health && curl --fail --retry 5 --retry-delay 3 http://localhost:8000
+      - if: always()
+        run: cd bookshelf_v3 && docker compose down -v

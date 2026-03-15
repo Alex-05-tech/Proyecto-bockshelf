@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Crear Cuenta — Bookshelf{% endblock %}
+{% block content %}
+
+<div class="auth-wrap">
+  <div class="auth-logo">
+    <div class="icon">📖</div>
+    <h2>Crea tu cuenta</h2>
+    <p>Únete y lleva el control de tus lecturas</p>
+  </div>
+
+  <div class="card" style="padding:2rem;">
+    <form method="post">
+      <div class="form-group">
+        <label class="form-label">Nombre de usuario</label>
+        <input type="text" name="username" class="form-control" required
+               placeholder="Elige un nombre único" autocomplete="username" minlength="3" maxlength="40">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" required
+               placeholder="tu@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input type="password" name="password" class="form-control" required
+               placeholder="Mínimo 6 caracteres" autocomplete="new-password" minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">
+        Crear cuenta
+      </button>
+    </form>
+  </div>
+
+  <div class="auth-footer">
+    ¿Ya tienes cuenta? <a href="{{ url_for('login') }}">Inicia sesión</a>
+  </div>
+</div>
+
+{% endblock %}
